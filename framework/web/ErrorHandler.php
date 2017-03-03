@@ -69,7 +69,10 @@ class ErrorHandler extends \yii\base\ErrorHandler
      * @since 2.0.7
      */
     public $displayVars = ['_GET', '_POST', '_FILES', '_COOKIE', '_SESSION'];
-
+    /**
+     * @var string the link for open file in IDE
+     */
+    public $ideLink;
 
     /**
      * Renders the exception.

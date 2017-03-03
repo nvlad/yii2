@@ -340,6 +340,11 @@ body pre {
 body.mousedown pre {
     pointer-events: auto;
 }
+<?php if ($handler->ideLink !== null): ?>
+body.codelink .hover-line {
+    cursor: pointer;
+}
+<?php endif ?>
     </style>
 </head>
 
@@ -414,6 +419,21 @@ window.onload = function() {
         hljs.highlightBlock(codeBlocks[i], '    ');
     }
 
+    <?php if ($handler->ideLink !== null): ?>
+    var openIdeFromCallStackItemCode = function (callStackItem, hoverLine, codeLine, lineNumber) {
+        hoverLine.addEventListener('click', function (e) {
+            var isMac = navigator.platform.substr(0, 3).toLowerCase() === 'mac';
+            if ((!isMac && e.ctrlKey) || (isMac && e.metaKey)) {
+                var file = callStackItem.getElementsByClassName('text')[0].innerText.substr(3).replace('\\', '/'),
+                    line = lineNumber.innerText;
+
+                window.open('<?= $handler->ideLink ?>'.replace('{file}', file).replace('{line}', line), '_self');
+
+                document.getElementsByTagName('body')[0].classList.remove('codelink');
+            }
+        });
+    };
+    <?php endif ?>
     var refreshCallStackItemCode = function(callStackItem) {
         if (!callStackItem.getElementsByTagName('pre')[0]) {
             return;
@@ -434,6 +454,9 @@ window.onload = function() {
                 errorLine.style.top = parseInt(lines[i].top - top) + 'px';
                 errorLine.style.height = parseInt(lines[i].bottom - lines[i].top + 6) + 'px';
             }
+            <?php if ($handler->ideLink !== null): ?>
+            openIdeFromCallStackItemCode(callStackItem, hoverLines[i], lines[i], lineNumbers[i]);
+            <?php endif ?>
         }
     };
 
@@ -451,8 +474,32 @@ window.onload = function() {
 };
 
     // Highlight lines that have text in them but still support text selection:
-    document.onmousedown = function() { document.getElementsByTagName('body')[0].classList.add('mousedown'); }
+    document.onmousedown = function (e) {
+        <?php if ($handler->ideLink !== null): ?>
+        var isMac = navigator.platform.substr(0, 3).toLowerCase() === 'mac';
+        if ((!isMac && !e.ctrlKey) && (isMac && !e.metaKey)) {
+            document.getElementsByTagName('body')[0].classList.add('mousedown');
+        }
+        <?php else: ?>
+        document.getElementsByTagName('body')[0].classList.add('mousedown');
+        <?php endif ?>
+    }
     document.onmouseup = function() { document.getElementsByTagName('body')[0].classList.remove('mousedown'); }
+    <?php if ($handler->ideLink !== null): ?>
+    document.onkeydown = function (e) {
+        if (!e.repeat) {
+            var isMac = navigator.platform.substr(0, 3).toLowerCase() === 'mac';
+            if ((!isMac && e.ctrlKey) || (isMac && e.metaKey)) {
+                document.getElementsByTagName('body')[0].classList.add('codelink');
+            }
+        }
+    }
+    document.onkeyup = function (e) {
+        if (e.key === 'Control' || e.key === 'Meta') {
+            document.getElementsByTagName('body')[0].classList.remove('codelink');
+        }
+    }
+    <?php endif ?>
     </script>
     <?php if (method_exists($this, 'endBody')) $this->endBody(); // to allow injecting code into body (mostly by Yii Debug Toolbar) ?>
 </body>
